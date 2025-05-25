@@ -16,14 +16,14 @@ import {
   onDocumentDeleted,
 } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
-import { VapiClient } from "@vapi-ai/server-sdk";
+import {VapiClient} from "@vapi-ai/server-sdk";
 
 // ===== Vapi API Configuration =====
 // Set this in your Firebase environment variables
 const VAPI_API_KEY = process.env.VAPI_API_KEY || "";
 
 // Initialize the Vapi client
-const vapiClient = new VapiClient({ token: VAPI_API_KEY });
+const vapiClient = new VapiClient({token: VAPI_API_KEY});
 
 /**
  * Schedule a call with Vapi API
