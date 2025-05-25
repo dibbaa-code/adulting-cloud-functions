@@ -16,12 +16,14 @@ import {
   onDocumentDeleted,
 } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
-import axios from "axios";
+import { VapiClient } from "@vapi-ai/server-sdk";
 
 // ===== Vapi API Configuration =====
 // Set this in your Firebase environment variables
 const VAPI_API_KEY = process.env.VAPI_API_KEY || "";
-const VAPI_API_URL = "https://api.vapi.ai/call/create";
+
+// Initialize the Vapi client
+const vapiClient = new VapiClient({ token: VAPI_API_KEY });
 
 /**
  * Schedule a call with Vapi API
@@ -61,7 +63,6 @@ async function scheduleVapiCall(
       type: "outboundPhoneCall",
       name: `${callType.charAt(0).toUpperCase() + callType.slice(1)} ` +
         `Call for User ${userId}`,
-      // Set this in your Firebase environment variables
       assistantId: process.env.VAPI_ASSISTANT_ID,
       customer: {
         number: phoneNumber,
@@ -74,19 +75,14 @@ async function scheduleVapiCall(
       },
     };
 
-    // Make the API call to Vapi
-    const response = await axios.post(VAPI_API_URL, payload, {
-      headers: {
-        "Authorization": `Bearer ${VAPI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-    });
+    // Make the API call to Vapi using the SDK
+    const response = await vapiClient.calls.create(payload);
 
     logger.info(
       `Successfully scheduled ${callType} call for user ${userId}`,
-      response.data,
+      response,
     );
-    return response.data;
+    return response;
   } catch (error) {
     logger.error(
       `Error scheduling ${callType} call for user ${userId}:`,
