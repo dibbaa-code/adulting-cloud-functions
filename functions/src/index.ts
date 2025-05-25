@@ -43,14 +43,18 @@ async function scheduleVapiCall(
       return;
     }
 
-    // Parse the callTime string to create a Date object for scheduling
-    const scheduledTime = new Date(callTime);
+    // Parse the time format like "8:00 AM"
+    const scheduledTime = parseTimeString(callTime);
 
     // Ensure the time is valid
-    if (isNaN(scheduledTime.getTime())) {
+    if (!scheduledTime || isNaN(scheduledTime.getTime())) {
       logger.error(`Invalid call time format: ${callTime}`);
       return;
     }
+
+    logger.info(
+      `Parsed time for ${callType} call: ${scheduledTime.toISOString()}`,
+    );
 
     // Prepare the request payload for Vapi API
     const payload = {
@@ -89,6 +93,50 @@ async function scheduleVapiCall(
       error,
     );
     throw error;
+  }
+}
+
+/**
+ * Parse a time string in format "8:00 AM" to a Date object
+ * @param {string} timeString - Time string in format "8:00 AM"
+ * @return {Date|null} Date object set to today with the specified time
+ */
+function parseTimeString(timeString: string): Date | null {
+  try {
+    // Check if the string matches the expected format
+    const timeRegex = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i;
+    const match = timeString.match(timeRegex);
+
+    if (!match) {
+      logger.error(`Time string does not match expected format: ${timeString}`);
+      return null;
+    }
+
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const period = match[3].toUpperCase();
+
+    // Convert to 24-hour format
+    if (period === "PM" && hours < 12) {
+      hours += 12;
+    } else if (period === "AM" && hours === 12) {
+      hours = 0;
+    }
+
+    // Create a date object for today with the specified time
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+
+    // If the time is already past for today, schedule it for tomorrow
+    const now = new Date();
+    if (date < now) {
+      date.setDate(date.getDate() + 1);
+    }
+
+    return date;
+  } catch (error) {
+    logger.error(`Error parsing time string: ${timeString}`, error);
+    return null;
   }
 }
 
