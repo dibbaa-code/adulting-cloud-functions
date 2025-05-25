@@ -28,6 +28,7 @@ const vapiClient = new VapiClient({token: VAPI_API_KEY});
 /**
  * Schedule a call with Vapi API
  * @param {string} userId - The user ID
+ * @param {string} userName - The user's name
  * @param {string} phoneNumber - The phone number to call
  * @param {string} callTime - The time to schedule the call
  * @param {string} callType - Type of call (morning or evening)
@@ -35,6 +36,7 @@ const vapiClient = new VapiClient({token: VAPI_API_KEY});
  */
 async function scheduleVapiCall(
   userId: string,
+  userName: string,
   phoneNumber: string,
   callTime: string,
   callType: "morning" | "evening",
@@ -61,16 +63,14 @@ async function scheduleVapiCall(
     // Prepare the request payload for Vapi API
     const payload = {
       type: "outboundPhoneCall",
-      name: `${callType.charAt(0).toUpperCase() + callType.slice(1)} ` +
-        `Call for User ${userId}`,
+      name: `${callType.charAt(0).toUpperCase() + callType.slice(1)} Call`,
       assistantId: process.env.VAPI_ASSISTANT_ID,
       customer: {
         number: phoneNumber,
-        name: `User ${userId}`,
+        name: userName,
       },
       schedulePlan: {
         earliestAt: scheduledTime.toISOString(),
-        // Add 5 minutes buffer
         latestAt: new Date(scheduledTime.getTime() + 5 * 60000).toISOString(),
       },
     };
@@ -177,12 +177,12 @@ export const onUserUpdated = onDocumentUpdated(
     const eveningCallTimeChanged = beforeData?.eveningCallTime !==
       afterData?.eveningCallTime && afterData?.eveningCallTime;
 
-    // Get the user's phone number
     const phoneNumber = afterData?.phoneNumber;
-
-    if (!phoneNumber) {
+    const userName = afterData?.name;
+    if (!phoneNumber || !userName) {
       logger.warn(
-        `Cannot schedule calls for user ${userId}: No phone number found`,
+        `Cannot schedule calls for user ${userId}: ` +
+        "No phone number or name found",
       );
       return null;
     }
@@ -192,6 +192,7 @@ export const onUserUpdated = onDocumentUpdated(
       if (morningCallTimeChanged) {
         await scheduleVapiCall(
           userId,
+          userName,
           phoneNumber,
           afterData.morningCallTime,
           "morning",
@@ -206,6 +207,7 @@ export const onUserUpdated = onDocumentUpdated(
       if (eveningCallTimeChanged) {
         await scheduleVapiCall(
           userId,
+          userName,
           phoneNumber,
           afterData.eveningCallTime,
           "evening",
