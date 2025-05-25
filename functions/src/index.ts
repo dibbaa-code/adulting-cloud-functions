@@ -64,10 +64,14 @@ async function scheduleVapiCall(
     const payload = {
       type: "outboundPhoneCall",
       name: `${callType.charAt(0).toUpperCase() + callType.slice(1)} Call`,
+      phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
       assistantId: process.env.VAPI_ASSISTANT_ID,
       customer: {
         number: phoneNumber,
         name: userName,
+      },
+      assistantOverrides: {
+        backgroundSound: "off"
       },
       schedulePlan: {
         earliestAt: scheduledTime.toISOString(),
@@ -129,6 +133,7 @@ function parseTimeString(timeString: string): Date | null {
       date.setDate(date.getDate() + 1);
     }
 
+    logger.info(`Scheduled time: ${date.toISOString()}`);
     return date;
   } catch (error) {
     logger.error(`Error parsing time string: ${timeString}`, error);
