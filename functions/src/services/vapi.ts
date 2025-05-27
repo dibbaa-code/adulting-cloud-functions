@@ -52,7 +52,7 @@ export async function scheduleVapiCall(
       type: "outboundPhoneCall",
       name: `${callType.charAt(0).toUpperCase() + callType.slice(1)} Call`,
       phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
-      assistantId: process.env.VAPI_ASSISTANT_ID,
+      workflowId: process.env.VAPI_WORKFLOW_ID,
       customer: {
         number: phoneNumber,
         name: userName,
