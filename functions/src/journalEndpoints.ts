@@ -5,6 +5,8 @@ import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp } from "firebase-admin/app";
+import { v4 as uuidv4 } from "uuid";
+import { CreateToDoArguments, ToDoItem, VapiRequest } from "./types/todoTypes.js";
 
 // Initialize Firebase Admin
 initializeApp();
@@ -14,36 +16,6 @@ const db = getFirestore();
 
 // API key for authentication
 const API_KEY = process.env.JOURNAL_API_KEY || "";
-
-// VAPI request type definitions
-interface ToDoItem {
-  text: string;
-  isComplete: boolean;
-}
-
-interface VapiToolArguments {
-  to_do_list: string[]; // Input to do list items
-  user_id: string;
-}
-
-interface VapiFunctionCall {
-  arguments: VapiToolArguments;
-  name: string;
-}
-
-interface VapiToolCall {
-  function: VapiFunctionCall;
-  id: string;
-  type: string;
-}
-
-interface VapiMessage {
-  toolCallList: VapiToolCall[];
-}
-
-interface VapiRequest {
-  message: VapiMessage;
-}
 
 /**
  * HTTP-triggered function that creates a to-do list entry for a user
@@ -109,7 +81,7 @@ export const createToDoList = onRequest(async (req, res) => {
 
     // Extract data from VAPI request
     const toolCall = vapiRequest.message.toolCallList[0];
-    const { to_do_list } = toolCall.function.arguments;
+    const { to_do_list } = toolCall.function.arguments as CreateToDoArguments;
     let { user_id } = toolCall.function.arguments;
 
     // Validate to_do_list
@@ -134,18 +106,20 @@ export const createToDoList = onRequest(async (req, res) => {
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split("T")[0];
 
+    // Convert new items to ToDoItem objects with isComplete status
+    const newTodoItems: ToDoItem[] = to_do_list.map((item) => ({
+      id: uuidv4(),
+      text: item,
+      isComplete: false, // Default to not completed
+      createdAt: new Date(),
+    }));
+
     // Reference to the customer's to_do_list subcollection
     const todoListRef = db
       .collection("users")
       .doc(user_id)
       .collection("to_do_list")
       .doc(today);
-
-    // Convert new items to ToDoItem objects with isComplete status
-    const newTodoItems: ToDoItem[] = to_do_list.map((item) => ({
-      text: item,
-      isComplete: false, // Default to not completed
-    }));
 
     // Check if document already exists for today
     const existingDoc = await todoListRef.get();

@@ -17,7 +17,13 @@ export const onUserDeleted = userDataTriggers.onUserDeleted;
 
 // Import and re-export Journal functions
 import * as journalFunctions from "./journalEndpoints";
-export const saveJournalEntry = journalFunctions.saveJournalEntry;
+export const createToDoList = journalFunctions.createToDoList;
+
+import * as updateToDoEndpoint from "./updateToDoEndpoint";
+export const updateToDoItems = updateToDoEndpoint.updateToDoItems;
+
+import * as getToDoEndpoint from "./getToDoEndpoint";
+export const getTodayToDoList = getToDoEndpoint.getTodayToDoList;
 
 // Import and re-export service integrations
 // These are not directly exposed as Cloud Functions but can be used by other functions
