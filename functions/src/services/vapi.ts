@@ -47,22 +47,26 @@ export async function scheduleVapiCall(
       `Parsed time for ${callType} call: ${scheduledTime.toISOString()}`,
     );
 
+
     // Prepare the request payload for Vapi API
     const payload = {
       type: "outboundPhoneCall",
       name: `${callType.charAt(0).toUpperCase() + callType.slice(1)} Call`,
       phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
-      workflowId: process.env.VAPI_WORKFLOW_ID,
+      assistantId: process.env.VAPI_ASSISTANT_ID,
       customer: {
         number: phoneNumber,
         name: userName,
       },
       assistantOverrides: {
-        backgroundSound: "off"
+        backgroundSound: "off",
+        variableValues: {
+          "user_id": userId,
+        },
       },
       schedulePlan: {
         earliestAt: scheduledTime.toISOString(),
-        latestAt: new Date(scheduledTime.getTime() + 5 * 60000).toISOString(),
+        latestAt: new Date(scheduledTime.getTime() + 2 * 60000).toISOString(),
       },
     };
 
