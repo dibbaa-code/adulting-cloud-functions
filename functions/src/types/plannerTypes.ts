@@ -8,6 +8,14 @@ export interface TaskItem {
   isComplete: boolean;
 }
 
+// Flexible input type for API compatibility (accepts both naming conventions)
+export interface TaskItemInput {
+  id: string;
+  text: string;
+  isComplete?: boolean;
+  is_complete?: boolean; // using both because vapi was sending either of these
+}
+
 export interface MealPlan {
   breakfast: string;
   lunch: string;
@@ -38,8 +46,7 @@ export interface GetPlannerArguments {
 // Update tasks endpoint arguments
 export interface UpdateTasksArguments {
   user_id: string;
-  tasks: TaskItem[];
-  tool_id: string;
+  tasks: TaskItemInput[];
 }
 
 // Update task completion status arguments
@@ -47,14 +54,12 @@ export interface UpdateTaskCompletionArguments {
   user_id: string;
   task_id: string;
   is_complete: boolean;
-  tool_id: string;
 }
 
 // Update meals endpoint arguments
 export interface UpdateMealsArguments {
   user_id: string;
   meals: PartialMealPlan;
-  tool_id: string;
 }
 
 // Function call interfaces for each endpoint

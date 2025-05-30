@@ -71,14 +71,14 @@ export const updateTaskCompletion = onRequest(async (req, res) => {
     const toolCall = vapiRequest.message.toolCallList[0];
     const { arguments: args } =
       toolCall.function as UpdateTaskCompletionFunctionCall;
-    const { user_id, task_id, is_complete, tool_id } = args;
+    const { user_id, task_id, is_complete } = args;
 
     // Validate required fields
-    if (!user_id || !task_id || typeof is_complete !== "boolean" || !tool_id) {
+    if (!user_id || !task_id || typeof is_complete !== "boolean") {
       res.status(400).json({
         success: false,
         error:
-          "Missing or invalid required fields: user_id, task_id, is_complete, or tool_id",
+          "Missing or invalid required fields: user_id, task_id, or is_complete",
         code: 400,
       });
       return;
@@ -127,7 +127,7 @@ export const updateTaskCompletion = onRequest(async (req, res) => {
     await plannerRef.update({
       tasks: data.tasks,
       lastModified: now,
-      modifiedBy: tool_id,
+      modifiedBy: toolCall.id,
     });
 
     // Calculate task statistics

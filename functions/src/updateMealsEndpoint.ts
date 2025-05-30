@@ -77,13 +77,13 @@ export const updateMeals = onRequest(async (req, res) => {
     // Extract data from VAPI request
     const toolCall = vapiRequest.message.toolCallList[0];
     const { arguments: args } = toolCall.function as UpdateMealsFunctionCall;
-    const { user_id, meals, tool_id } = args;
+    const { user_id, meals } = args;
 
     // Validate required fields
-    if (!user_id || !meals || !tool_id) {
+    if (!user_id || !meals) {
       res.status(400).json({
         success: false,
-        error: "Missing required fields: user_id, meals, or tool_id",
+        error: "Missing required fields: user_id or meals",
         code: 400,
       });
       return;
@@ -170,7 +170,7 @@ export const updateMeals = onRequest(async (req, res) => {
         meals: { ...defaultMeals, ...meals },
         createdAt: now,
         lastModified: now,
-        modifiedBy: tool_id,
+        modifiedBy: toolCall.id,
       };
 
       await plannerRef.set(newPlanner);
@@ -183,7 +183,7 @@ export const updateMeals = onRequest(async (req, res) => {
       await plannerRef.update({
         meals: updatedMeals,
         lastModified: now,
-        modifiedBy: tool_id,
+        modifiedBy: toolCall.id,
       });
     }
 

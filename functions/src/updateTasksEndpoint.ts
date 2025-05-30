@@ -74,13 +74,13 @@ export const updateTasks = onRequest(async (req, res) => {
     // Extract data from VAPI request
     const toolCall = vapiRequest.message.toolCallList[0];
     const { arguments: args } = toolCall.function as UpdateTasksFunctionCall;
-    const { user_id, tasks, tool_id } = args;
+    const { user_id, tasks } = args;
 
     // Validate required fields
-    if (!user_id || !tasks || !tool_id) {
+    if (!user_id || !tasks) {
       res.status(400).json({
         success: false,
-        error: "Missing required fields: user_id, tasks, or tool_id",
+        error: "Missing required fields: user_id or tasks",
         code: 400,
       });
       return;
@@ -106,12 +106,29 @@ export const updateTasks = onRequest(async (req, res) => {
       return;
     }
 
-    // Validate each task
+    // Validate and normalize each task
+    const normalizedTasks = [];
     for (const task of tasks) {
-      if (!task.id || !task.text || typeof task.isComplete !== "boolean") {
+      if (!task.id || !task.text) {
         res.status(400).json({
           success: false,
-          error: "Each task must have id, text, and isComplete fields",
+          error: "Each task must have id and text fields",
+          code: 400,
+        });
+        return;
+      }
+
+      // Handle both isComplete and is_complete for compatibility
+      let isComplete: boolean;
+      if (typeof task.isComplete === "boolean") {
+        isComplete = task.isComplete;
+      } else if (typeof task.is_complete === "boolean") {
+        isComplete = task.is_complete;
+      } else {
+        res.status(400).json({
+          success: false,
+          error:
+            "Each task must have isComplete or is_complete field as boolean",
           code: 400,
         });
         return;
@@ -125,6 +142,13 @@ export const updateTasks = onRequest(async (req, res) => {
         });
         return;
       }
+
+      // Normalize to our expected format
+      normalizedTasks.push({
+        id: task.id,
+        text: task.text,
+        isComplete,
+      });
     }
 
     // Get today's date in YYYY-MM-DD format
@@ -144,7 +168,7 @@ export const updateTasks = onRequest(async (req, res) => {
     if (!doc.exists) {
       // Create new planner document
       const newPlanner: PlannerDocument = {
-        tasks,
+        tasks: normalizedTasks,
         meals: {
           breakfast: "",
           lunch: "",
@@ -153,22 +177,24 @@ export const updateTasks = onRequest(async (req, res) => {
         },
         createdAt: now,
         lastModified: now,
-        modifiedBy: tool_id,
+        modifiedBy: toolCall.id,
       };
 
       await plannerRef.set(newPlanner);
     } else {
       // Update existing planner document
       await plannerRef.update({
-        tasks,
+        tasks: normalizedTasks,
         lastModified: now,
-        modifiedBy: tool_id,
+        modifiedBy: toolCall.id,
       });
     }
 
     // Calculate task statistics
-    const totalTasks = tasks.length;
-    const completedTasks = tasks.filter((task) => task.isComplete).length;
+    const totalTasks = normalizedTasks.length;
+    const completedTasks = normalizedTasks.filter(
+      (task) => task.isComplete
+    ).length;
 
     // Prepare response
     const response: TasksResponse = {
@@ -176,7 +202,7 @@ export const updateTasks = onRequest(async (req, res) => {
       message: "Tasks updated successfully",
       timestamp: now.toISOString(),
       operation_id: toolCall.id,
-      tasks,
+      tasks: normalizedTasks,
       total_tasks: totalTasks,
       completed_tasks: completedTasks,
     };
