@@ -15,7 +15,7 @@ import {
 const db = getFirestore();
 
 // API key for authentication
-const API_KEY = process.env.JOURNAL_API_KEY || "";
+const API_KEY = process.env.VAPI_API_KEY || "";
 
 /**
  * HTTP-triggered function that updates a task's completion status in today's planner

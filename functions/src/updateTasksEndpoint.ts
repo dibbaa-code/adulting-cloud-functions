@@ -15,7 +15,7 @@ import {
 const db = getFirestore();
 
 // API key for authentication
-const API_KEY = process.env.JOURNAL_API_KEY || "";
+const API_KEY = process.env.VAPI_API_KEY || "";
 
 // Constants
 const MAX_TASKS = 50; // Maximum number of tasks allowed

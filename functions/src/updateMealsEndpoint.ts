@@ -10,18 +10,19 @@ import {
   UpdateMealsFunctionCall,
   MealsResponse,
   MealPlan,
+  PartialMealPlan,
 } from "./types/plannerTypes.js";
 
 // Initialize Firestore
 const db = getFirestore();
 
 // API key for authentication
-const API_KEY = process.env.JOURNAL_API_KEY || "";
+const API_KEY = process.env.VAPI_API_KEY || "";
 
 // Constants
 const MAX_MEAL_LENGTH = 1000; // Maximum characters per meal description
 
-type MealType = keyof MealPlan;
+type MealType = keyof PartialMealPlan;
 
 /**
  * HTTP-triggered function that updates meals in today's planner
@@ -89,23 +90,49 @@ export const updateMeals = onRequest(async (req, res) => {
     }
 
     // Validate meals object structure
-    const requiredMealTypes: MealType[] = [
+    const allowedMealTypes: MealType[] = [
       "breakfast",
       "lunch",
       "snacks",
       "dinner",
     ];
-    for (const mealType of requiredMealTypes) {
-      if (typeof meals[mealType] !== "string") {
+    const providedMealTypes = Object.keys(meals) as MealType[];
+
+    // Check if at least one meal type is provided
+    if (providedMealTypes.length === 0) {
+      res.status(400).json({
+        success: false,
+        error:
+          "At least one meal type must be provided (breakfast, lunch, snacks, dinner)",
+        code: 400,
+      });
+      return;
+    }
+
+    // Validate only the provided meal types
+    for (const mealType of providedMealTypes) {
+      if (!allowedMealTypes.includes(mealType)) {
         res.status(400).json({
           success: false,
-          error: `Invalid or missing ${mealType} in meals object`,
+          error: `Invalid meal type: ${mealType}. Allowed types: ${allowedMealTypes.join(
+            ", "
+          )}`,
           code: 400,
         });
         return;
       }
 
-      if (meals[mealType].length > MAX_MEAL_LENGTH) {
+      const mealValue = meals[mealType];
+      if (mealValue === undefined || typeof mealValue !== "string") {
+        res.status(400).json({
+          success: false,
+          error: `${mealType} must be a string`,
+          code: 400,
+        });
+        return;
+      }
+
+      if (mealValue.length > MAX_MEAL_LENGTH) {
         res.status(400).json({
           success: false,
           error: `${mealType} description too long. Maximum length: ${MAX_MEAL_LENGTH} characters`,
@@ -130,10 +157,17 @@ export const updateMeals = onRequest(async (req, res) => {
     const now = new Date();
 
     if (!doc.exists) {
-      // Create new planner document
+      // Create new planner document with default empty meals, then update with provided meals
+      const defaultMeals: MealPlan = {
+        breakfast: "",
+        lunch: "",
+        snacks: "",
+        dinner: "",
+      };
+
       const newPlanner: PlannerDocument = {
         tasks: [],
-        meals,
+        meals: { ...defaultMeals, ...meals },
         createdAt: now,
         lastModified: now,
         modifiedBy: tool_id,
@@ -141,13 +175,21 @@ export const updateMeals = onRequest(async (req, res) => {
 
       await plannerRef.set(newPlanner);
     } else {
+      // Get existing data and merge with new meals
+      const existingData = doc.data() as PlannerDocument;
+      const updatedMeals = { ...existingData.meals, ...meals };
+
       // Update existing planner document
       await plannerRef.update({
-        meals,
+        meals: updatedMeals,
         lastModified: now,
         modifiedBy: tool_id,
       });
     }
+
+    // Get the final meal state for response
+    const finalDoc = await plannerRef.get();
+    const finalData = finalDoc.data() as PlannerDocument;
 
     // Prepare response
     const response: MealsResponse = {
@@ -155,7 +197,7 @@ export const updateMeals = onRequest(async (req, res) => {
       message: "Meals updated successfully",
       timestamp: now.toISOString(),
       operation_id: toolCall.id,
-      meals,
+      meals: finalData.meals,
     };
 
     // Return success response

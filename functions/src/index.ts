@@ -25,6 +25,19 @@ export const updateToDoItems = updateToDoEndpoint.updateToDoItems;
 import * as getToDoEndpoint from "./getToDoEndpoint";
 export const getTodayToDoList = getToDoEndpoint.getTodayToDoList;
 
+// Planner functions
+import * as getTodaysPlannerEndpoint from "./getTodaysPlannerEndpoint";
+export const getTodaysPlanner = getTodaysPlannerEndpoint.getTodaysPlanner;
+
+import * as updateTasksEndpoint from "./updateTasksEndpoint";
+export const updateTasks = updateTasksEndpoint.updateTasks;
+
+import * as updateTaskCompletionEndpoint from "./updateTaskCompletionEndpoint";
+export const updateTaskCompletion = updateTaskCompletionEndpoint.updateTaskCompletion;
+
+import * as updateMealsEndpoint from "./updateMealsEndpoint";
+export const updateMeals = updateMealsEndpoint.updateMeals;
+
 // Import and re-export service integrations
 // These are not directly exposed as Cloud Functions but can be used by other functions
 export { scheduleVapiCall, parseTimeString } from "./services/vapi";

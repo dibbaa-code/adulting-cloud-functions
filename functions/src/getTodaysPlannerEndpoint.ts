@@ -14,7 +14,7 @@ import {
 const db = getFirestore();
 
 // API key for authentication
-const API_KEY = process.env.JOURNAL_API_KEY || "";
+const API_KEY = process.env.VAPI_API_KEY || "";
 
 /**
  * HTTP-triggered function that retrieves today's planner for a user

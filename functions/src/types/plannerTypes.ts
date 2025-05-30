@@ -15,6 +15,13 @@ export interface MealPlan {
   dinner: string;
 }
 
+export interface PartialMealPlan {
+  breakfast?: string;
+  lunch?: string;
+  snacks?: string;
+  dinner?: string;
+}
+
 export interface PlannerDocument {
   tasks: TaskItem[];
   meals: MealPlan;
@@ -46,7 +53,7 @@ export interface UpdateTaskCompletionArguments {
 // Update meals endpoint arguments
 export interface UpdateMealsArguments {
   user_id: string;
-  meals: MealPlan;
+  meals: PartialMealPlan;
   tool_id: string;
 }
 
