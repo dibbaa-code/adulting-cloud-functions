@@ -66,7 +66,7 @@ export async function scheduleVapiCall(
       },
       schedulePlan: {
         earliestAt: scheduledTime.toISOString(),
-        latestAt: new Date(scheduledTime.getTime() + 2 * 60000).toISOString(),
+        latestAt: new Date(scheduledTime.getTime() + 6 * 60000).toISOString(),
       },
     };
 
