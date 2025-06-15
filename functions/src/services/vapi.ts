@@ -62,6 +62,7 @@ export async function scheduleVapiCall(
         backgroundSound: "off",
         variableValues: {
           "user_id": userId,
+          "user_name": userName,
         },
       },
       schedulePlan: {
