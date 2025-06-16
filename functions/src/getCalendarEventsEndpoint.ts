@@ -6,11 +6,7 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { google } from "googleapis";
-import { OAuth2Client } from "google-auth-library";
-import {
-  CalendarEvent,
-  GetCalendarEventsFunctionCall
-} from "./types/calendarTypes";
+import { CalendarEvent } from "./types/calendarTypes";
 import { VapiRequest } from "./types/plannerTypes";
 
 // Initialize services
@@ -40,6 +36,8 @@ export const getCalendarEvents = onRequest(async (req, res) => {
       return;
     }
 
+    logger.info("request method verified");
+
     // Validate API key from headers
     const providedApiKey = req.headers.apikey;
     if (!providedApiKey || providedApiKey !== API_KEY) {
@@ -55,6 +53,8 @@ export const getCalendarEvents = onRequest(async (req, res) => {
       return;
     }
 
+    logger.info("API key verified");
+
     // Extract and validate VAPI request structure
     const vapiRequest = req.body as VapiRequest;
     if (!vapiRequest?.message?.toolCallList?.[0]?.function?.arguments) {
@@ -67,47 +67,53 @@ export const getCalendarEvents = onRequest(async (req, res) => {
       return;
     }
 
+    logger.info("VAPI request structure verified");
+
     // Extract data from VAPI request
     const toolCall = vapiRequest.message.toolCallList[0];
-    const { arguments: args } = toolCall.function as GetCalendarEventsFunctionCall;
-
-    // Validate only the user_id parameter
-    if (!args.user_id) {
-      res.status(400).json({
-        success: false,
-        error: "Missing user_id in request",
-        code: 400,
-      });
-      return;
-    }
 
     // Use environment variables or hardcoded values for authentication
-    const ACCESS_TOKEN = process.env.GOOGLE_CALENDAR_ACCESS_TOKEN || "your-access-token-here";
-    
-    // Create OAuth2 client with the hardcoded access token
-    const oAuth2Client = new OAuth2Client();
-    oAuth2Client.setCredentials({ access_token: ACCESS_TOKEN });
+    const ACCESS_TOKEN =
+      process.env.GOOGLE_CALENDAR_ACCESS_TOKEN || "your-access-token-here";
+
+    logger.info("Access token length:", ACCESS_TOKEN.length);
+    logger.info("Access token first 10 chars:", ACCESS_TOKEN.substring(0, 10));
+
+    // Create OAuth2 client with the access token
+    const oAuth2Client = new google.auth.OAuth2();
+    oAuth2Client.setCredentials({
+      access_token: ACCESS_TOKEN,
+    });
+
+    logger.info("OAuth2 client created with credentials");
 
     // Create Calendar API client
-    const calendar = google.calendar({ version: "v3" });
-    
+    const calendar = google.calendar({
+      version: "v3",
+      auth: oAuth2Client
+    });
+
     // Set auth for all calendar requests
-    const calendarWithAuth = { 
+    const calendarWithAuth = {
       events: {
         list: async (params: any) => {
           return await calendar.events.list({
             ...params,
-            auth: oAuth2Client
+            auth: oAuth2Client,
           });
-        }
-      }
+        },
+      },
     };
+
+    logger.info("Calendar API client created");
 
     // Use hardcoded values for calendar parameters
     const timeMin = new Date().toISOString();
     const timeMax = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // Default to 1 day from now
     const maxResults = 50;
     const calendarId = "primary";
+
+    logger.info("Calendar parameters set");
 
     // Get events from Calendar API
     const response = await calendarWithAuth.events.list({
@@ -119,21 +125,28 @@ export const getCalendarEvents = onRequest(async (req, res) => {
       orderBy: "startTime",
     });
 
+    logger.info("Events retrieved from Calendar API");
+    logger.info("Events: " + response.data.items);
+
     // Process the events
-    const events = response.data.items?.map((event) => {
-      return {
-        id: event.id,
-        summary: event.summary,
-        description: event.description,
-        location: event.location,
-        start: event.start,
-        end: event.end,
-        attendees: event.attendees,
-        organizer: event.organizer,
-        status: event.status,
-        htmlLink: event.htmlLink,
-      } as CalendarEvent;
-    }) || [];
+    const events =
+      response.data.items?.map((event) => {
+        return {
+          id: event.id,
+          summary: event.summary,
+          description: event.description,
+          location: event.location,
+          start: event.start,
+          end: event.end,
+          attendees: event.attendees,
+          organizer: event.organizer,
+          status: event.status,
+          htmlLink: event.htmlLink,
+        } as CalendarEvent;
+      }) || [];
+
+    logger.info("Events processed");
+    logger.info("Events: " + events);
 
     // Return success response in VAPI format
     res.status(200).json({
