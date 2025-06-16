@@ -38,6 +38,9 @@ export const updateTaskCompletion = updateTaskCompletionEndpoint.updateTaskCompl
 import * as updateMealsEndpoint from "./updateMealsEndpoint";
 export const updateMeals = updateMealsEndpoint.updateMeals;
 
+// Calendar functions
+export { getCalendarEvents } from "./getCalendarEventsEndpoint";
+
 // Import and re-export service integrations
 // These are not directly exposed as Cloud Functions but can be used by other functions
 export { scheduleVapiCall, parseTimeString } from "./services/vapi";
